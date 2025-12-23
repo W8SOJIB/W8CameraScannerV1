@@ -105,13 +105,23 @@ pkg install git -y
 pkg install inetutils -y
 ```
 
-#### Step 2: Clone and Install
 ```bash
+pkg install traceroute -y
+```
+
+#### Step 2: Clone and Install
 # Clone repository
+```
 git clone https://github.com/W8SOJIB/W8CameraScannerV1.git
+```
+
+```
 cd W8CameraScannerV1
+```
 
 # Install dependencies
+
+```
 pip install -r requirements.txt
 ```
 

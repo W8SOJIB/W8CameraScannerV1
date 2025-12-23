@@ -212,6 +212,7 @@ def trace_route():
     except FileNotFoundError:
         print(f"{Fore.RED}[!] Traceroute command not found on this system{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}[i] For Termux, install: pkg install inetutils{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}[i] Or install: pkg install traceroute{Style.RESET_ALL}")
     except Exception as e:
         print(f"{Fore.RED}[!] Error: {e}{Style.RESET_ALL}")
     

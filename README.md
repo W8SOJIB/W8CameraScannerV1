@@ -102,7 +102,6 @@ pkg install git -y
 
 **Install traceroute (optional, for trace route feature):**
 ```bash
-```bash
 pkg install traceroute -y
 ```
 

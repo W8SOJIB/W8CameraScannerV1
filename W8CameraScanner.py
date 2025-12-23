@@ -172,13 +172,27 @@ def trace_route():
             cmd = ['tracert', '-d', '-h', '30', '-w', '1000', target]
         else:
             # Linux/macOS/Termux traceroute command
-            # Try traceroute first, fallback to tracepath
+            # Try multiple commands in order of preference
+            cmd = None
+            
+            # Try traceroute first
             try:
-                subprocess.run(['which', 'traceroute'], capture_output=True, check=True)
+                result = subprocess.run(['traceroute', '--version'], capture_output=True, timeout=2)
                 cmd = ['traceroute', '-n', '-m', '30', '-w', '1', target]
             except:
-                # Fallback to tracepath (available on most Linux/Termux)
-                cmd = ['tracepath', '-n', target]
+                pass
+            
+            # Try tracepath as fallback
+            if cmd is None:
+                try:
+                    result = subprocess.run(['tracepath', '-V'], capture_output=True, timeout=2)
+                    cmd = ['tracepath', '-n', target]
+                except:
+                    pass
+            
+            # If nothing works, default to traceroute (will show error if not found)
+            if cmd is None:
+                cmd = ['traceroute', '-n', '-m', '30', '-w', '1', target]
         
         # Run the command and display output in real-time
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)

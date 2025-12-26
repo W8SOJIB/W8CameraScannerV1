@@ -604,6 +604,161 @@ def run_scanner(ip_list):
     print(f"{Fore.CYAN}{'='*50}{Style.RESET_ALL}\n")
 
 
+def get_subnet():
+    """Get local subnet"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ".".join(ip.split(".")[:3])
+    except:
+        return None
+
+
+def is_rtsp(ip):
+    """Check if RTSP port 554 is open"""
+    try:
+        s = socket.socket()
+        s.settimeout(0.3)
+        ok = s.connect_ex((ip, 554)) == 0
+        s.close()
+        return ok
+    except:
+        return False
+
+
+def dahua_name(ip):
+    """Get Dahua camera name"""
+    try:
+        s = socket.socket()
+        s.settimeout(0.5)
+        s.connect((ip, 37777))
+        data = s.recv(512).decode(errors="ignore")
+        s.close()
+        
+        m = re.search(r"DH-[A-Z0-9\-]+", data)
+        if m:
+            return m.group(0)
+    except:
+        pass
+    return None
+
+
+def hikvision_name(ip):
+    """Get Hikvision camera name"""
+    try:
+        s = socket.socket()
+        s.settimeout(0.5)
+        s.connect((ip, 8000))
+        data = s.recv(512).decode(errors="ignore")
+        s.close()
+        
+        if "Hikvision" in data:
+            return "HIKVISION CAMERA"
+    except:
+        pass
+    return None
+
+
+def scan_rtsp_ip(ip, results, results_lock):
+    """Scan single IP for RTSP camera"""
+    if not is_rtsp(ip):
+        return
+    
+    name = (
+        dahua_name(ip)
+        or hikvision_name(ip)
+        or "RTSP CAMERA"
+    )
+    
+    with results_lock:
+        results.append({
+            'ip': ip,
+            'name': name,
+            'rtsp_url': f"rtsp://{ip}:554"
+        })
+        print(f"{Fore.GREEN}[✓] Camera Found: {ip} - {name}{Style.RESET_ALL}")
+
+
+def neighbours_camera_scanner():
+    """Scan local network for RTSP cameras"""
+    print(f"\n{Fore.CYAN}{'='*50}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}[📷] NEIGHBOURS CAMERA SCANNER [📷]{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}{'='*50}{Style.RESET_ALL}\n")
+    
+    subnet = get_subnet()
+    if not subnet:
+        print(f"{Fore.RED}[!] Could not detect local subnet!{Style.RESET_ALL}")
+        return
+    
+    print(f"{Fore.GREEN}[i] Detected Subnet: {Fore.CYAN}{subnet}.x{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}[*] Scanning for RTSP cameras (port 554)...{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}[*] This may take a few minutes...{Style.RESET_ALL}\n")
+    print(f"{Fore.CYAN}{'─'*50}{Style.RESET_ALL}\n")
+    
+    ips = [f"{subnet}.{i}" for i in range(1, 255)]
+    results = []
+    results_lock = threading.Lock()
+    
+    # Worker function
+    def worker(ip_list):
+        for ip in ip_list:
+            scan_rtsp_ip(ip, results, results_lock)
+    
+    # Create threads
+    THREADS = 80
+    chunks = [ips[i::THREADS] for i in range(THREADS)]
+    threads = []
+    
+    start_time = time.time()
+    
+    for chunk in chunks:
+        t = threading.Thread(target=worker, args=(chunk,), daemon=True)
+        t.start()
+        threads.append(t)
+    
+    # Wait for all threads
+    for t in threads:
+        t.join()
+    
+    elapsed = time.time() - start_time
+    
+    # Display results
+    print(f"\n{Fore.CYAN}{'═'*50}{Style.RESET_ALL}")
+    print(f"{Fore.GREEN}[✓] SCAN COMPLETE!{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}{'═'*50}{Style.RESET_ALL}\n")
+    
+    if results:
+        print(f"{Fore.RED}[*] Found {len(results)} RTSP CAMERAS:{Style.RESET_ALL}\n")
+        for idx, r in enumerate(results, 1):
+            print(f"{Fore.CYAN}[{idx}] {r['ip']}{Style.RESET_ALL}")
+            print(f"    Name: {Fore.YELLOW}{r['name']}{Style.RESET_ALL}")
+            print(f"    RTSP URL: {Fore.WHITE}{r['rtsp_url']}{Style.RESET_ALL}")
+            print()
+        
+        # Save to file
+        try:
+            with open("NeighboursCameras_Results.txt", 'w', encoding='utf-8') as f:
+                f.write("="*60 + "\n")
+                f.write("NEIGHBOURS CAMERA SCAN - RTSP CAMERAS FOUND\n")
+                f.write("="*60 + "\n\n")
+                for r in results:
+                    f.write(f"IP: {r['ip']}\n")
+                    f.write(f"Name: {r['name']}\n")
+                    f.write(f"RTSP URL: {r['rtsp_url']}\n")
+                    f.write("-"*60 + "\n\n")
+            print(f"{Fore.GREEN}[✓] Results saved to: NeighboursCameras_Results.txt{Style.RESET_ALL}")
+        except:
+            pass
+    else:
+        print(f"{Fore.YELLOW}[!] No RTSP cameras found on local network{Style.RESET_ALL}")
+    
+    print(f"\n{Fore.CYAN}[i] Total IPs scanned: 254{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}[i] Cameras found: {len(results)}{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}[i] Time taken: {elapsed:.2f} seconds{Style.RESET_ALL}")
+
+
 def clear_screen():
     """Clear the terminal screen"""
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -616,7 +771,8 @@ def print_menu():
     print(f"{Fore.CYAN}{'='*50}{Style.RESET_ALL}")
     print(f"{Fore.YELLOW}1.{Style.RESET_ALL} 🔍 Trace Route")
     print(f"{Fore.RED}2.{Style.RESET_ALL} ⚡ SUPER FAST SCAN (Camera Scanner)")
-    print(f"{Fore.YELLOW}3.{Style.RESET_ALL} Exit")
+    print(f"{Fore.GREEN}3.{Style.RESET_ALL} 📷 Neighbours Camera Scanner")
+    print(f"{Fore.YELLOW}4.{Style.RESET_ALL} Exit")
     print(f"{Fore.CYAN}{'='*50}{Style.RESET_ALL}\n")
 
 
@@ -647,7 +803,7 @@ def main():
             
             # Show menu
             print_menu()
-            choice = input(f"{Fore.GREEN}Enter your choice (1-3): {Style.RESET_ALL}").strip()
+            choice = input(f"{Fore.GREEN}Enter your choice (1-4): {Style.RESET_ALL}").strip()
             
             if choice == '1':
                 # Trace Route
@@ -660,12 +816,17 @@ def main():
                 input(f"\n{Fore.CYAN}Press Enter to continue...{Style.RESET_ALL}")
                 
             elif choice == '3':
+                # Neighbours Camera Scanner
+                neighbours_camera_scanner()
+                input(f"\n{Fore.CYAN}Press Enter to continue...{Style.RESET_ALL}")
+                
+            elif choice == '4':
                 # Exit
                 print(f"\n{Fore.GREEN}[✓] Goodbye!{Style.RESET_ALL}\n")
                 break
                 
             else:
-                print(f"{Fore.RED}[!] Invalid choice. Please select 1-3.{Style.RESET_ALL}")
+                print(f"{Fore.RED}[!] Invalid choice. Please select 1-4.{Style.RESET_ALL}")
                 time.sleep(1)
         
         except KeyboardInterrupt:

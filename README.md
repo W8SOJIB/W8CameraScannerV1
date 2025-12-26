@@ -36,6 +36,14 @@ W8 Camera Scanner is a powerful network scanning tool designed to detect cameras
 - **Fast execution** with optimized timeouts
 - **Auto-traces to google.com** by default
 
+### 📷 Neighbours Camera Scanner
+- **Local network scanning** - Auto-detects your subnet
+- **RTSP camera detection** - Finds cameras on port 554
+- **Brand identification** - Detects Dahua and Hikvision cameras
+- **Multi-threaded** - 80 threads for fast scanning
+- **RTSP URL generation** - Ready-to-use camera URLs
+- **Auto-save results** - Saves to `NeighboursCameras_Results.txt`
+
 ### 🎯 Camera Detection
 Automatically detects:
 - ✅ **WEB SERVICE** cameras (Dahua/Anjhua)
@@ -152,7 +160,8 @@ Select Mode:
 ==================================================
 1. 🔍 Trace Route
 2. ⚡ SUPER FAST SCAN (Camera Scanner)
-3. Exit
+3. 📷 Neighbours Camera Scanner
+4. Exit
 ==================================================
 ```
 
@@ -168,6 +177,14 @@ Select Mode:
 - **Multi-threaded** for maximum speed
 - Shows only **cameras** (filters out regular web servers)
 - Saves results to `SuperFastScan_Results.txt`
+
+### Option 3: Neighbours Camera Scanner 📷
+- **Auto-detects** your local network subnet
+- Scans all 254 IPs in your subnet automatically
+- Finds **RTSP cameras** on port 554
+- Identifies **Dahua** and **Hikvision** cameras
+- Generates **RTSP URLs** for easy access
+- Saves results to `NeighboursCameras_Results.txt`
 
 ---
 
@@ -196,7 +213,38 @@ Enter End IP (press Enter for single IP): 192.168.1.255
 [i] Speed: 1128 ports/sec
 ```
 
-### Example 3: Results File
+### Example 3: Neighbours Camera Scanner
+```
+Select Mode: 3
+
+[📷] NEIGHBOURS CAMERA SCANNER [📷]
+==================================================
+
+[i] Detected Subnet: 192.168.1.x
+[*] Scanning for RTSP cameras (port 554)...
+[*] This may take a few minutes...
+
+[✓] Camera Found: 192.168.1.100 - DH-IPC-HDW1230M
+[✓] Camera Found: 192.168.1.101 - HIKVISION CAMERA
+
+[*] Found 2 RTSP CAMERAS:
+
+[1] 192.168.1.100
+    Name: DH-IPC-HDW1230M
+    RTSP URL: rtsp://192.168.1.100:554
+
+[2] 192.168.1.101
+    Name: HIKVISION CAMERA
+    RTSP URL: rtsp://192.168.1.101:554
+
+[✓] Results saved to: NeighboursCameras_Results.txt
+
+[i] Total IPs scanned: 254
+[i] Cameras found: 2
+[i] Time taken: 12.45 seconds
+```
+
+### Example 4: Results File
 Results are automatically saved to `SuperFastScan_Results.txt`:
 ```
 ============================================================
@@ -243,10 +291,13 @@ The tool identifies cameras based on:
 - **Title keywords:** WEB, Login, DVR, Camera, IPCam
 - **Content signatures:** WEB SERVICE, login.asp, DVR markers
 - **Response patterns:** Camera-specific HTTP responses
+- **RTSP protocol:** Detects streaming cameras on port 554
+- **Brand identification:** Dahua (DH-XXX) and Hikvision models
 
 ### Filtered Output
 Only shows:
 - ✅ Cameras and DVR systems
+- ✅ RTSP streaming cameras
 - ❌ Regular web servers (filtered out)
 - ❌ Empty responses (ignored)
 
@@ -255,12 +306,16 @@ Only shows:
 ## 🛠️ Technical Details
 
 ### Ports Scanned
-- **Port 80** (HTTP)
-- **Port 8080** (Alternative HTTP)
+- **Port 80** (HTTP) - Super Fast Scan
+- **Port 8080** (Alternative HTTP) - Super Fast Scan
+- **Port 554** (RTSP) - Neighbours Camera Scanner
+- **Port 37777** (Dahua) - Camera identification
+- **Port 8000** (Hikvision) - Camera identification
 
 ### Timeouts
-- **Port Check:** 0.5 seconds
+- **Port Check:** 0.3-0.5 seconds
 - **HTTP Request:** 1-2 seconds
+- **RTSP Check:** 0.3 seconds
 - **Optimized for speed**
 
 ### Detection Methods
@@ -268,6 +323,8 @@ Only shows:
 2. **Content Analysis** - Searches for camera signatures
 3. **Server Headers** - Identifies server types
 4. **Response Patterns** - Matches known camera patterns
+5. **RTSP Protocol** - Detects RTSP streaming cameras
+6. **Brand Detection** - Identifies Dahua and Hikvision models
 
 ---
 
